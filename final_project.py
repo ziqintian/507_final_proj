@@ -4,17 +4,14 @@
 
 
 # import packages
-from distutils.log import info
 import json
 import secrets
-from urllib import response
 import requests
 from bs4 import BeautifulSoup
-import re
 import webbrowser
-import plotly.express as px
 import matplotlib.pyplot as plt
 import yaml
+import pandas
 
 baseurl_yelp = 'https://api.yelp.com/v3/businesses/search'
 wiki_url = 'https://en.wikipedia.org/wiki/List_of_United_States_cities_by_population'
@@ -28,7 +25,10 @@ def getData():
     # global result_aggregate
 
     header = {'authorization': "Bearer " + KEY}
-    where = str(input('Which city do you wanna explore? (example: New_York)\n'))
+    print("========================================================================================")
+    print("=============================== Restaurants ============================================")
+    print("========================================================================================")
+    where = str(input('Which city do you wanna know more about restaurants? (example: New_York)\n'))
     baseurl = "https://api.yelp.com/v3/businesses/search?location=" + where
     response = requests.get(baseurl, headers=header)
     data = response.json()
@@ -43,10 +43,16 @@ def buildTree(data):
     dic = {}
     for restaurant in data["businesses"]:
         dic = {"name":restaurant["name"], "attributes":{}}
-        dic["attributes"]["price"] = restaurant["price"]
-        dic["attributes"]["rating"] = restaurant["rating"]
         dic["attributes"]["url"] = restaurant["url"]
         dic["attributes"]["transactions"] = restaurant["transactions"]
+        if 'price' in restaurant.keys():
+            dic["attributes"]["price"] = restaurant["price"]
+        else:
+            dic["attributes"]["price"] = None
+        if "rating" in restaurant.keys():
+            dic["attributes"]["rating"] = restaurant["rating"]
+        else:
+            dic["attributes"]["rating"] = None
         restaurant_tree.append(dic)
     return restaurant_tree
 
@@ -59,20 +65,20 @@ def getName():
     return name
 
 def priceTree(restaurant_tree):
-    priceTree = {'$': [], '$$': [], '$$$': [], '$$$$': []}
+    price_tree = {'$': [], '$$': [], '$$$': [], '$$$$': []}
     for restaurant in restaurant_tree:
         if 'price' in restaurant.keys():
             price = restaurant["attributes"]["price"]
             name = restaurant['name']
             if price == '$':
-                priceTree["$"].append(name)
+                price_tree["$"].append(name)
             elif price == '$$':
-                priceTree["$$"].append(name)
+                price_tree["$$"].append(name)
             elif price == '$$$':
-                priceTree["$$$"].append(name)
+                price_tree["$$$"].append(name)
             elif price == '$$$$':
-                priceTree["$$$$"].append(name)
-    return priceTree
+                price_tree["$$$$"].append(name)
+    return price_tree
 
 def getCategories_city():
     global data
@@ -163,24 +169,21 @@ def cityInfo():
                 "city":city,
                 "state":state,
                 "population": population,
-                "land_area":land_area }
+                "land_area(km)":land_area}
 
         city_dic.append(city)
     return city_dic
 
-def openWiki():
+def openPage():
     while True:
         yes = ['yes', 'ya', 'yeah', 'yas', 'y', 'yy', 'sure', 'ye']
         no = ['no', "n", "nah", "not"]
         print("==================================================================================================================")
-        print("==================================================================================================================")
-        answer = input("Do you want to open the Wikipedia of the city? ")
-        print("==================================================================================================================")
-        print("==================================================================================================================")
+
+        city = input("Which city do you want to know more? (example: New York) ")
+        answer = input("Do you want to open the unsplash page of the city? (yes/no, answer no to move to next step) ")
         if answer.lower() in yes:
-            state = input("State? (example: New_York) ")
-            city = input("City? (example: New_York) ")
-            city_url = wiki_baseurl + city + ',_' + state
+            city_url = "https://unsplash.com/s/photos/" + city
             webbrowser.open(city_url, new = 0)
         elif answer.lower() in no:
             buildTree(getData())
@@ -198,51 +201,53 @@ def openRestaurant(web,result):
 
 ## Main ##
 if __name__=='__main__':
-    print("Welcome to the yelp explorer! \n")
     print("==================================================================================================================")
     print("==================================================================================================================")
-    print("================================== Know more about cities on out list ============================================")
+    print("================================== Welcome to the yelp explorer! =================================================")
     print("==================================================================================================================")
+    print()
+    print("=============================== Top 15 cities which have most population =========================================")
     print("==================================================================================================================")
-    print(cityInfo())
-
-    # ask to open wiki
-    openWiki()
+    # cities = cityInfo()
+    # for city in cities:
+    #     print(city)
+    df = pandas.DataFrame(data = cityInfo())
+    print(df.head(15))
+    # ask to open unsplash to see more photos
+    openPage()
     yelp = open('yelp_' + where + '.json')
     info = json.load(yelp)
 
     # get the restaurant name of the city
     print("==================================================================================================================")
+    print("======================================= Restaurants in the city ==================================================")
     print("==================================================================================================================")
-    print("===================================== Restaurants in the city ====================================================")
-    print("==================================================================================================================")
-    print("==================================================================================================================")
+
     print(yaml.dump(buildTree(data), default_flow_style=False))
     print(getName())
 
-    # Draw category in the city
+    # the pie chart of restaurant categories in the city
     city_categories = countCategory()
     my_labels = list(city_categories.keys())
     sizes = list(city_categories.values())
     fig1, ax1 = plt.subplots()
-    ax1.pie(sizes,  labels=my_labels, autopct='%1.2f%%')
+    ax1.pie(sizes, labels=my_labels, autopct='%1.2f%%')
     plt.show()
 
 
-    # Draw rating chart
+    # the bar plot of numbers of restaurants of each rating
     data = drawRating(data)
     rating = list(data.keys())
     count = list(data.values())
     fig = plt.figure(figsize = (10, 5))
-    plt.bar(rating, count, color ='blue', width = 0.4)
-    plt.xlabel("Rating")
-    plt.ylabel("No. of restaurant")
-    plt.title("Number of restaurant in different rating")
+    plt.bar(rating, count, color ='#82A284')
+    plt.title("Numbers of restaurants for each score of rating")
+    plt.xlabel("Rating(s)")
+    plt.ylabel("Numbers of restaurants")
     plt.show()
-    print("==================================================================================================================")
-    print("==================================================================================================================")
-    print("==================================== Thank you for using =========================================================")
-    print("==================================== See you next time! ==========================================================")
-    print("==================================================================================================================")
-    print("==================================================================================================================")
+
+    print("================================================================================================================")
+    print("==================================== Thank you for using =======================================================")
+    print("==================================== See you next time! ========================================================")
+    print("================================================================================================================")
 
