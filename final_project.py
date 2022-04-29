@@ -67,17 +67,16 @@ def getName():
 def priceTree(restaurant_tree):
     price_tree = {'$': [], '$$': [], '$$$': [], '$$$$': []}
     for restaurant in restaurant_tree:
-        if 'price' in restaurant.keys():
-            price = restaurant["attributes"]["price"]
-            name = restaurant['name']
-            if price == '$':
-                price_tree["$"].append(name)
-            elif price == '$$':
-                price_tree["$$"].append(name)
-            elif price == '$$$':
-                price_tree["$$$"].append(name)
-            elif price == '$$$$':
-                price_tree["$$$$"].append(name)
+        price = restaurant["attributes"]["price"]
+        name = restaurant['name']
+        if price == '$':
+            price_tree["$"].append(name)
+        elif price == '$$':
+            price_tree["$$"].append(name)
+        elif price == '$$$':
+            price_tree["$$$"].append(name)
+        elif price == '$$$$':
+            price_tree["$$$$"].append(name)
     return price_tree
 
 def getCategories_city():
@@ -208,9 +207,6 @@ if __name__=='__main__':
     print()
     print("=============================== Top 15 cities which have most population =========================================")
     print("==================================================================================================================")
-    # cities = cityInfo()
-    # for city in cities:
-    #     print(city)
     df = pandas.DataFrame(data = cityInfo())
     print(df.head(15))
     # ask to open unsplash to see more photos
